@@ -13,6 +13,7 @@ A six-round horse race you can watch from the grandstand: twenty horses, ten per
 3. Press **Pause**, then **Resume**. Horses freeze mid-stride and carry on from the same spot.
 4. When the tenth horse crosses the line, the round's full finishing order appears in **Results**, and the next round starts by itself.
 5. Pick **2×** or **4×** to watch faster, at any moment. The results stay the same.
+6. Switch the track between **3D** and **2D** with the buttons next to the round title. The race carries on in either view.
 
 The strip at the top shows the six rounds: finished, on the track, to come. **Program** and **Results** scroll by themselves to the round being run and the newest result, and the winner is called out on the track between rounds. A short blue line, like football's offside line, sits in the leader's lane at its nose until the first horse finishes, so you can see who is really ahead.
 
@@ -22,7 +23,7 @@ To skip the wait, open a state directly:
 [completed](https://akagamina.github.io/horse-racing/#/showroom/states/completed) ·
 [one horse](https://akagamina.github.io/horse-racing/#/showroom/horses/h01)
 
-Add `?seed=1234` before the `#` to replay the same horses, program and race. Add `?track=html` to see the lightweight track used when WebGL is not available.
+Add `?seed=1234` before the `#` to replay the same horses, program and race. Add `?track=html` to open on the 2D track.
 
 ## Run locally
 
@@ -55,6 +56,21 @@ npx playwright install --with-deps chromium
 - **Pause.** Pausing stops the clock; no time is added for the pause. Switching to another tab or leaving for the showroom also pauses, and **Resume** continues from the same positions.
 - **Randomness.** Seedable PRNG (mulberry32). Normal sessions use a random seed; the same seed and the same elapsed time always give the same program, positions and results.
 
+## Two tracks: 2D and 3D
+
+![The same race at the same moment: the 2D track, the 3D track, and a closer look at the 3D field](docs/why-3d.png)
+
+The **2D track** follows the brief's example: one row per lane, horses run left to right, the finish is the red line. It is plain HTML and CSS, and it is also what you see when WebGL is not available.
+
+The **3D track** is the default. It shows what a flat track cannot: the field running away from you in depth, real shadows from the afternoon sun, dust kicked up behind each horse, and a blue line at the leader's nose. Everything in the scene is derived from the race clock and the metres each horse has covered, so a paused race is frozen mid-stride, dust included, and the same moment always draws the same picture.
+
+Why Three.js, and what it costs:
+
+- **No rule depends on it.** The scene reads positions from the store and draws them; it decides nothing. Remove `src/three/` and the game still runs on the 2D track.
+- **It loads on its own.** Three.js is a separate chunk (about 135 kB gzipped), fetched when the 3D track is first shown; the first screen does not wait for it.
+- **No asset files.** Horses, jockeys, track and dust are built in code: nothing to license or download.
+- **It has a real cost:** a bigger download, more code, and slower 3D tests on CI, where WebGL runs on the CPU. For a script embedded in other sites I would measure that before adding it.
+
 ## Architecture and assumptions
 
 ```
@@ -77,7 +93,7 @@ Data flows one way: **domain → store → components → scene**. The store own
 
 Guards live in the store, so repeated clicks cannot start a second loop or publish a round twice. The loop (`useRaceLoop`) runs only while the store says `running` and is cancelled when its component unmounts.
 
-**3D.** The horse and jockey are built from Three.js primitives at runtime: no external model, texture or licence. All horses share one set of geometries and materials; each horse only adds its own transforms, saddle-cloth colour and number. The gallop pose is a function of distance covered, not wall time, so the same race moment always draws the same frame and a paused horse is frozen mid-stride. With `prefers-reduced-motion`, leg movement is damped while positions and results update as usual. Three.js objects are kept outside Vue's reactivity and disposed when the last user unmounts. If WebGL cannot start, the app shows a numbered HTML track fed by the same data, and the race can be completed there.
+**3D.** The horse and jockey are built from Three.js primitives at runtime: no external model, texture or licence. All horses share one set of geometries and materials; each horse only adds its own transforms, saddle-cloth colour and number. The gallop pose is a function of distance covered, not wall time, so the same race moment always draws the same frame and a paused horse is frozen mid-stride. With `prefers-reduced-motion`, leg movement is damped while positions and results update as usual. Three.js objects are kept outside Vue's reactivity and disposed when the last user unmounts. If WebGL cannot start, the app shows the 2D track, fed by the same data, and the race can be completed there.
 
 **Assumptions.**
 

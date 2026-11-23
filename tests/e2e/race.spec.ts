@@ -114,6 +114,27 @@ test.describe('3D track', () => {
     expect(p1).toBe(p2)
   })
 
+  test('switches between the 3D and the classic 2D track without losing the race', async ({ page }) => {
+    await page.clock.install()
+    const race = new RacePage(page)
+    await race.open('?seed=6')
+    await trackReady(page)
+    await race.generate.click()
+    await race.toggle.click()
+    await page.clock.runFor(1000)
+
+    await page.getByTestId('view-switch').getByRole('button', { name: '2D' }).click()
+    await expect(race.track).toHaveAttribute('data-mode', 'html')
+    const before = await race.laneProgress()
+    expect(before.filter((p) => p > 0)).toHaveLength(10)
+    await page.clock.runFor(1000)
+    const after = await race.laneProgress()
+    expect(after.filter((p, i) => p > before[i]!).length).toBeGreaterThanOrEqual(2)
+
+    await page.getByTestId('view-switch').getByRole('button', { name: '3D' }).click()
+    await expect(race.track).toHaveAttribute('data-mode', 'webgl')
+  })
+
   test('falls back to the HTML track when WebGL cannot start, and the race still finishes', async ({ page }) => {
     await page.addInitScript(() => {
       const original = HTMLCanvasElement.prototype.getContext

@@ -25,7 +25,15 @@ const props = withDefaults(
 )
 
 type Mode = 'loading' | 'webgl' | 'html'
-const mode = ref<Mode>('loading')
+type View = '3d' | '2d'
+/** Which track the viewer picked. Presentation only, so it lives here and not in the store. */
+const view = ref<View>(props.forceHtml ? '2d' : '3d')
+const webglFailed = ref(false)
+const sceneReady = ref(false)
+const mode = computed<Mode>(() => {
+  if (view.value === '2d' || webglFailed.value) return 'html'
+  return sceneReady.value ? 'webgl' : 'loading'
+})
 const stage = ref<HTMLDivElement | null>(null)
 const canvas = ref<HTMLCanvasElement | null>(null)
 const overlay = shallowRef<TrackOverlay | null>(null)
@@ -80,8 +88,8 @@ function measure(): void {
 }
 
 async function bootWebGL(): Promise<void> {
-  if (props.forceHtml || !supportsWebGL()) {
-    mode.value = 'html'
+  if (!supportsWebGL()) {
+    webglFailed.value = true
     return
   }
   try {
@@ -91,7 +99,7 @@ async function bootWebGL(): Promise<void> {
     if (disposed || !canvas.value) return
     scene = new RaceScene(canvas.value)
     scene.setField(field.value)
-    mode.value = 'webgl'
+    sceneReady.value = true
     await nextTick()
     measure()
     observer = new ResizeObserver(measure)
@@ -100,8 +108,16 @@ async function bootWebGL(): Promise<void> {
     console.warn('WebGL track unavailable, using the HTML track.', error)
     scene?.dispose()
     scene = null
-    mode.value = 'html'
+    webglFailed.value = true
   }
+}
+
+/** 3D is built the first time it is asked for and kept, so switching back is instant. */
+function showView(next: View): void {
+  view.value = next
+  if (next !== '3d') return
+  if (!scene && !webglFailed.value) void bootWebGL()
+  else void nextTick(measure)
 }
 
 watch(field, (next) => {
@@ -110,7 +126,9 @@ watch(field, (next) => {
 })
 watch(() => [props.positions, props.started, reducedMotion.value], draw)
 
-onMounted(bootWebGL)
+onMounted(() => {
+  if (view.value === '3d') void bootWebGL()
+})
 onBeforeUnmount(() => {
   disposed = true
   observer?.disconnect()
@@ -123,6 +141,19 @@ onBeforeUnmount(() => {
   <section class="track" aria-labelledby="track-title" :data-mode="mode" data-testid="race-track">
     <header class="track__head">
       <h2 id="track-title">{{ round ? roundTitle(round.number, round.distance) : 'Track' }}</h2>
+      <div v-if="!webglFailed" class="view-switch" role="group" aria-label="Track view" data-testid="view-switch">
+        <button
+          v-for="option in ['3d', '2d'] as const"
+          :key="option"
+          type="button"
+          :class="{ 'is-active': view === option }"
+          :aria-pressed="view === option"
+          :data-view="option"
+          @click="showView(option)"
+        >
+          {{ option.toUpperCase() }}
+        </button>
+      </div>
       <p v-if="leader && started" class="track__leader" aria-hidden="true">
         <HorseBadge :horse="leader.horse" />
         <span class="track__leader-name">{{ leader.horse.name }} leads</span>
@@ -207,6 +238,27 @@ onBeforeUnmount(() => {
   gap: 0.75rem;
   padding: 0.6rem 0.9rem;
   min-height: 3rem;
+}
+.view-switch {
+  display: inline-flex;
+  margin-right: auto;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: var(--radius-s);
+  overflow: hidden;
+}
+.view-switch button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: 600 var(--step--1) / 1 var(--font-display);
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+}
+.view-switch button.is-active {
+  background: #fff;
+  color: var(--turf-deep);
 }
 .track__head h2 {
   font-size: var(--step-2);

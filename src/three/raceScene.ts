@@ -2,7 +2,21 @@ import * as THREE from 'three'
 import type { Horse } from '@/domain'
 import { createHorseRig, poseGallop, poseStand, type HorseRig } from './horseModel'
 import { addRaceLights, createRenderer } from './lighting'
-import { FINISH_Z, frontRunner, gallopPhase, horseZ, LANE_COUNT, LANE_WIDTH, laneX, noseZ, START_Z, TRACK_WIDTH } from './trackLayout'
+import {
+  DUST_PUFFS,
+  dustTrail,
+  FINISH_Z,
+  frontRunner,
+  gallopPhase,
+  horseZ,
+  LANE_COUNT,
+  LANE_WIDTH,
+  laneX,
+  noseZ,
+  START_Z,
+  STRAIGHT_LENGTH,
+  TRACK_WIDTH,
+} from './trackLayout'
 
 export interface FieldEntry {
   readonly horse: Horse
@@ -39,6 +53,10 @@ const DIRT = '#A97B4F'
 /** Leader line: a cold colour that stands out from the dirt, the turf and the chalk. */
 const LEADER_LINE = '#19D3FF'
 const LEADER_WALL_HEIGHT = 1.9
+/** Dust colour: a lighter, drier tone of the track. */
+const DUST = '#D2B48C'
+/** How far behind the horse origin the hind hooves strike, in world units. */
+const HOOF_STRIKE = 0.75
 
 /**
  * One canvas, one fixed perspective camera behind the start: the field runs
@@ -52,6 +70,8 @@ export class RaceScene {
   private readonly rigs = new Map<string, HorseRig>()
   private readonly poles = new THREE.Group()
   private readonly leaderLine = new THREE.Group()
+  private dust!: THREE.InstancedMesh
+  private readonly dummy = new THREE.Object3D()
   private readonly disposables: { dispose(): void }[] = []
   private field: readonly FieldEntry[] = []
   private poleDistance = 0
@@ -62,10 +82,11 @@ export class RaceScene {
     this.renderer = createRenderer(canvas)
     this.scene.background = new THREE.Color(SKY)
     this.scene.fog = new THREE.Fog(SKY, 80, 190)
-    addRaceLights(this.scene)
+    this.addSunShadows(addRaceLights(this.scene))
     this.buildTrack()
     this.scene.add(this.poles)
     this.buildLeaderLine()
+    this.buildDust()
   }
 
   /** Replaces the runners. Rigs of horses that stay in the field are reused. */
@@ -82,6 +103,9 @@ export class RaceScene {
       let rig = this.rigs.get(entry.horse.id)
       if (!rig) {
         rig = createHorseRig(entry.horse)
+        rig.root.traverse((object) => {
+          if (object instanceof THREE.Mesh && !object.material.transparent) object.castShadow = true
+        })
         this.rigs.set(entry.horse.id, rig)
         this.scene.add(rig.root)
       }
@@ -101,6 +125,7 @@ export class RaceScene {
       if (!frame.started || progress >= 1) poseStand(rig)
       else poseGallop(rig, gallopPhase(metres, rig.phaseOffset), { amplitude })
     }
+    this.placeDust(frame)
     const front = frame.started ? frontRunner(frame.positions, frame.distance) : null
     const lane = front && this.field.find((entry) => entry.horse.id === front.id)?.lane
     this.leaderLine.visible = !!front && !!lane
@@ -132,6 +157,72 @@ export class RaceScene {
     this.rigs.clear()
     this.disposables.forEach((d) => d.dispose())
     this.renderer.dispose()
+  }
+
+  // -------------------------------------------------------------- dust
+
+  /** One instanced mesh for every puff on the track: a single draw call. */
+  private buildDust(): void {
+    const geometry = this.track(new THREE.IcosahedronGeometry(1, 1))
+    const material = this.track(
+      new THREE.MeshStandardMaterial({ color: DUST, roughness: 1, transparent: true, opacity: 0.5, depthWrite: false }),
+    )
+    this.dust = new THREE.InstancedMesh(geometry, material, LANE_COUNT * DUST_PUFFS)
+    this.dust.frustumCulled = false
+    this.scene.add(this.dust)
+  }
+
+  /** Puffs rise, grow and settle as the runner moves on; finished horses kick up none. */
+  private placeDust(frame: SceneFrame): void {
+    let slot = 0
+    if (frame.started && frame.distance > 0) {
+      for (const entry of this.field) {
+        const progress = (frame.positions.get(entry.horse.id) ?? 0) / frame.distance
+        if (progress <= 0 || progress >= 1) continue
+        for (const puff of dustTrail(progress * STRAIGHT_LENGTH)) {
+          if (slot >= this.dust.count) break
+          const scatter = Math.sin(puff.seed * 12.9898 + entry.lane * 78.233) * 0.5
+          const settle = puff.age < 0.55 ? 1 : Math.max(0, (1 - puff.age) / 0.45)
+          const size = (0.16 + puff.age * 0.42) * settle
+          this.dummy.position.set(
+            laneX(entry.lane) + scatter * 0.45,
+            0.1 + puff.age * 0.38,
+            horseZ(puff.at / STRAIGHT_LENGTH) + HOOF_STRIKE,
+          )
+          this.dummy.scale.set(size * 1.3, size * 0.75, size * 1.3)
+          this.dummy.updateMatrix()
+          this.dust.setMatrixAt(slot++, this.dummy.matrix)
+        }
+      }
+    }
+    this.dummy.scale.setScalar(0)
+    this.dummy.updateMatrix()
+    for (let i = slot; i < this.dust.count; i++) this.dust.setMatrixAt(i, this.dummy.matrix)
+    this.dust.instanceMatrix.needsUpdate = true
+  }
+
+  // -------------------------------------------------------------- light
+
+  /** Real shadows from the afternoon sun, sized to the straight only. */
+  private addSunShadows(sun: THREE.DirectionalLight): void {
+    this.renderer.shadowMap.enabled = true
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    sun.castShadow = true
+    sun.target.position.set(0, 0, (START_Z + FINISH_Z) / 2)
+    sun.position.set(-18, 34, (START_Z + FINISH_Z) / 2 + 14)
+    this.scene.add(sun.target)
+    const camera = sun.shadow.camera
+    // The light looks down at an angle, so a square box comfortably holds the whole straight.
+    const half = STRAIGHT_LENGTH / 2 + 8
+    camera.left = -half
+    camera.right = half
+    camera.top = half
+    camera.bottom = -half
+    camera.near = 1
+    camera.far = 120
+    sun.shadow.mapSize.set(2048, 2048)
+    sun.shadow.bias = -0.0005
+    sun.shadow.normalBias = 0.02
   }
 
   // -------------------------------------------------------------- camera
@@ -199,11 +290,11 @@ export class RaceScene {
     const span = near - far
 
     const turf = this.track(new THREE.MeshStandardMaterial({ color: TURF, roughness: 1, map: this.track(noiseTexture(0.07, 6)) }))
-    this.plane(160, 260, turf, 0, -0.02, centerZ)
+    this.plane(160, 260, turf, 0, -0.02, centerZ).receiveShadow = true
 
     const dirtTexture = this.track(dirtTextureFor(span))
     const dirt = this.track(new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 1, map: dirtTexture }))
-    this.plane(TRACK_WIDTH + 1.6, span, dirt, 0, 0, centerZ)
+    this.plane(TRACK_WIDTH + 1.6, span, dirt, 0, 0, centerZ).receiveShadow = true
 
     // Faint lane guides raked into the dirt.
     const guide = this.track(new THREE.MeshBasicMaterial({ color: '#E9DCC7', transparent: true, opacity: 0.35, depthWrite: false }))

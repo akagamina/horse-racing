@@ -51,6 +51,38 @@ export function frontRunner(positions: ReadonlyMap<string, number>, distance: nu
   return id === null ? null : { id, progress: front / distance }
 }
 
+/** World length of the straight, start line to finish line. */
+export const STRAIGHT_LENGTH = START_Z - FINISH_Z
+/** Dust puffs kept behind each runner, and the world distance between two puffs. */
+export const DUST_PUFFS = 8
+export const DUST_SPACING = 0.3
+
+export interface DustPuff {
+  /** Track distance (world units from the start) where the puff was kicked up. */
+  readonly at: number
+  /** 0 = just kicked up, close to 1 = about to settle. */
+  readonly age: number
+  /** Stable per puff, for a little sideways scatter. */
+  readonly seed: number
+}
+
+/**
+ * Dust behind a runner that has covered `travelled` world units. Derived
+ * from distance only, never from wall time: a paused race shows the dust
+ * frozen in the air, and the same race moment always draws the same dust.
+ */
+export function dustTrail(travelled: number, count = DUST_PUFFS, spacing = DUST_SPACING): DustPuff[] {
+  const puffs: DustPuff[] = []
+  const newest = Math.floor(travelled / spacing)
+  for (let k = 0; k < count; k++) {
+    const index = newest - k
+    if (index < 1) break
+    const at = index * spacing
+    puffs.push({ at, age: (travelled - at) / (count * spacing), seed: index })
+  }
+  return puffs
+}
+
 /** Gallop phase in [0, 1), derived from distance only, never from wall time. */
 export function gallopPhase(metres: number, offset: number): number {
   const phase = metres / STRIDE_METRES + offset

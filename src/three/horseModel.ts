@@ -31,32 +31,65 @@ let shared: SharedAssets | null = null
 let users = 0
 
 function geometries(): Record<string, THREE.BufferGeometry> {
-  const ellipsoid = new THREE.SphereGeometry(1, 12, 9)
-  const upperLeg = new THREE.CylinderGeometry(0.095, 0.07, 0.56, 7)
+  const ellipsoid = new THREE.SphereGeometry(1, 24, 16)
+  const upperLeg = new THREE.CylinderGeometry(0.1, 0.065, 0.56, 12)
   upperLeg.translate(0, -0.28, 0)
-  const lowerLeg = new THREE.CylinderGeometry(0.06, 0.05, 0.56, 6)
+  const lowerLeg = new THREE.CylinderGeometry(0.055, 0.045, 0.56, 10)
   lowerLeg.translate(0, -0.28, 0)
-  const hoof = new THREE.CylinderGeometry(0.07, 0.085, 0.09, 7)
+  const joint = new THREE.SphereGeometry(0.075, 12, 8)
+  const sock = new THREE.CylinderGeometry(0.058, 0.06, 0.22, 10)
+  sock.translate(0, -0.47, 0)
+  const hoof = new THREE.CylinderGeometry(0.065, 0.085, 0.1, 12)
   hoof.translate(0, -0.6, 0)
-  const neck = new THREE.CylinderGeometry(0.16, 0.27, 0.95, 8)
+  const neck = new THREE.CylinderGeometry(0.15, 0.27, 0.95, 16)
   neck.translate(0, 0.42, 0)
-  const head = new THREE.CylinderGeometry(0.09, 0.16, 0.66, 7)
+  const head = new THREE.CylinderGeometry(0.085, 0.15, 0.66, 14)
   head.translate(0, -0.33, 0)
-  const ear = new THREE.ConeGeometry(0.045, 0.15, 4)
-  const tail = new THREE.ConeGeometry(0.12, 0.85, 6)
-  tail.translate(0, -0.42, 0)
-  const mane = new THREE.BoxGeometry(0.06, 0.85, 0.12)
-  mane.translate(0, 0.42, 0.18)
+  const muzzle = new THREE.SphereGeometry(0.1, 14, 10)
+  const eye = new THREE.SphereGeometry(0.028, 8, 6)
+  const blaze = new THREE.PlaneGeometry(0.06, 0.42)
+  const ear = new THREE.ConeGeometry(0.045, 0.16, 8)
+  const tail = new THREE.ConeGeometry(0.13, 0.95, 12)
+  tail.translate(0, -0.47, 0)
+  // Mane: a row of soft tufts along the crest instead of a single slab.
+  const tuft = new THREE.SphereGeometry(0.075, 10, 8)
   const cloth = new THREE.BoxGeometry(0.9, 0.42, 0.78)
+  const clothNumber = new THREE.PlaneGeometry(0.3, 0.3)
   const torso = new THREE.BoxGeometry(0.34, 0.44, 0.26)
   torso.translate(0, 0.22, 0)
-  const helmet = new THREE.SphereGeometry(0.15, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2)
-  const face = new THREE.SphereGeometry(0.12, 8, 6)
+  const helmet = new THREE.SphereGeometry(0.15, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2)
+  const face = new THREE.SphereGeometry(0.12, 12, 8)
+  const boot = new THREE.BoxGeometry(0.1, 0.1, 0.26)
   const limb = new THREE.BoxGeometry(0.1, 0.1, 0.42)
   const thigh = new THREE.BoxGeometry(0.12, 0.12, 0.38)
   const bib = new THREE.PlaneGeometry(0.3, 0.3)
   const shadow = new THREE.CircleGeometry(1, 20)
-  return { ellipsoid, upperLeg, lowerLeg, hoof, neck, head, ear, tail, mane, cloth, torso, helmet, face, limb, thigh, bib, shadow }
+  return {
+    ellipsoid,
+    upperLeg,
+    lowerLeg,
+    joint,
+    sock,
+    hoof,
+    neck,
+    head,
+    muzzle,
+    eye,
+    blaze,
+    ear,
+    tail,
+    tuft,
+    cloth,
+    clothNumber,
+    torso,
+    helmet,
+    face,
+    boot,
+    limb,
+    thigh,
+    bib,
+    shadow,
+  }
 }
 
 function acquire(): SharedAssets {
@@ -85,11 +118,16 @@ function material(assets: SharedAssets, key: string, make: () => THREE.Material)
 }
 
 function solid(assets: SharedAssets, hex: string, roughness = 0.8): THREE.Material {
-  return material(
-    assets,
-    `solid:${hex}:${roughness}`,
-    () => new THREE.MeshStandardMaterial({ color: hex, roughness, metalness: 0, flatShading: true }),
-  )
+  return material(assets, `solid:${hex}:${roughness}`, () => new THREE.MeshStandardMaterial({ color: hex, roughness, metalness: 0 }))
+}
+
+/**
+ * White markings, fixed per horse so each one is recognisable from race to
+ * race: which legs wear socks, and whether the face has a blaze.
+ */
+export function markingsFor(horse: Horse): { socks: readonly boolean[]; blaze: boolean } {
+  const bits = (horse.number * 2654435761) >>> 0
+  return { socks: [0, 1, 2, 3].map((i) => ((bits >>> (i * 3)) & 7) < 3), blaze: ((bits >>> 13) & 3) === 0 }
 }
 
 /** Saddle-cloth number painted on a canvas: white disc, dark numeral. */
@@ -141,9 +179,11 @@ export function createHorseRig(horse: Horse): HorseRig {
   const assets = acquire()
   const g = assets.geometries
   const coat = coatFor(horse)
-  const coatMat = solid(assets, coat.hex, 0.62)
-  const pointsMat = solid(assets, coat.points, 0.7)
-  const silk = solid(assets, horse.color.hex, 0.55)
+  const coatMat = solid(assets, coat.hex, 0.42)
+  const pointsMat = solid(assets, coat.points, 0.6)
+  const silk = solid(assets, horse.color.hex, 0.38)
+  const eyeMat = solid(assets, '#0B0908', 0.2)
+  const marks = markingsFor(horse)
   const white = solid(assets, '#F1EFEA', 0.9)
   const skin = solid(assets, '#C98E6B', 0.9)
   const hoofMat = solid(assets, '#1C1917', 0.9)
@@ -183,22 +223,48 @@ export function createHorseRig(horse: Horse): HorseRig {
   rump.position.set(0, 0.07, 0.58)
   const cloth = mesh(g.cloth!, silk)
   cloth.position.set(0, 0.16, 0.02)
+  // Saddle-cloth number on both flanks, like a real race.
+  for (const side of [-1, 1]) {
+    const n = mesh(g.clothNumber!, bibMat)
+    n.position.set(side * 0.452, 0.14, 0.12)
+    n.rotation.y = side * (Math.PI / 2)
+    body.add(n)
+  }
   body.add(barrel, chest, rump, cloth)
 
   // Neck and head
   const neck = new THREE.Group()
   neck.position.set(0, 0.22, -0.78)
   neck.rotation.x = -0.95
-  neck.add(mesh(g.neck!, coatMat), mesh(g.mane!, pointsMat))
+  neck.add(mesh(g.neck!, coatMat))
+  for (let i = 0; i < 7; i++) {
+    const t = mesh(g.tuft!, pointsMat)
+    t.position.set(0, 0.06 + i * 0.13, 0.17 - i * 0.012)
+    t.scale.set(0.55, 1.1, 1)
+    neck.add(t)
+  }
   const head = new THREE.Group()
   head.position.set(0, 0.86, 0)
   head.rotation.x = -1.25
   const skull = mesh(g.head!, coatMat)
+  const muzzle = mesh(g.muzzle!, pointsMat)
+  muzzle.position.set(0, -0.66, 0.01)
+  muzzle.scale.set(0.95, 0.8, 1.05)
+  const eyeL = mesh(g.eye!, eyeMat)
+  eyeL.position.set(-0.115, -0.1, 0.04)
+  const eyeR = eyeL.clone()
+  eyeR.position.x = 0.115
   const earL = mesh(g.ear!, coatMat)
   earL.position.set(-0.07, 0.06, 0.05)
   const earR = earL.clone()
   earR.position.x = 0.07
-  head.add(skull, earL, earR)
+  head.add(skull, muzzle, eyeL, eyeR, earL, earR)
+  if (marks.blaze) {
+    const blaze = mesh(g.blaze!, white)
+    blaze.position.set(0, -0.32, -0.128)
+    blaze.rotation.set(-0.11, Math.PI, 0)
+    head.add(blaze)
+  }
   neck.add(head)
   body.add(neck)
 
@@ -212,12 +278,14 @@ export function createHorseRig(horse: Horse): HorseRig {
   // Legs
   const legs: [THREE.Group, THREE.Group][] = []
   const legAt = (x: number, y: number, z: number) => {
+    const index = legs.length
     const upper = new THREE.Group()
     upper.position.set(x, y, z)
     upper.add(mesh(g.upperLeg!, coatMat))
     const lower = new THREE.Group()
     lower.position.y = -0.56
-    lower.add(mesh(g.lowerLeg!, pointsMat), mesh(g.hoof!, hoofMat))
+    lower.add(mesh(g.joint!, coatMat), mesh(g.lowerLeg!, pointsMat), mesh(g.hoof!, hoofMat))
+    if (marks.socks[index]) lower.add(mesh(g.sock!, white))
     upper.add(lower)
     body.add(upper)
     legs.push([upper, lower])
@@ -250,7 +318,12 @@ export function createHorseRig(horse: Horse): HorseRig {
   const bib = mesh(g.bib!, bibMat)
   bib.position.set(0, 0.22, 0.135)
   torso.add(bib)
-  jockey.add(torso, helmet, face, armL, armR, thighL, thighR)
+  const bootL = mesh(g.boot!, hoofMat)
+  bootL.position.set(-0.27, -0.12, 0.08)
+  bootL.rotation.x = 0.4
+  const bootR = bootL.clone()
+  bootR.position.x = 0.27
+  jockey.add(torso, helmet, face, armL, armR, thighL, thighR, bootL, bootR)
   body.add(jockey)
 
   let disposed = false
