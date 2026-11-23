@@ -23,9 +23,9 @@ export class RacePage {
 
   /** Lane progress (0–1) of the HTML track, by lane number. */
   async laneProgress(): Promise<number[]> {
-    return this.page.locator('[data-testid="html-track"] .runner').evaluateAll((nodes) =>
-      nodes.map((n) => Number((n as HTMLElement).style.getPropertyValue('--p'))),
-    )
+    return this.page
+      .locator('[data-testid="html-track"] .runner')
+      .evaluateAll((nodes) => nodes.map((n) => Number((n as HTMLElement).style.getPropertyValue('--p'))))
   }
 
   async resultGroups(): Promise<number> {
@@ -34,9 +34,11 @@ export class RacePage {
 
   /** Horse ids per round as listed in Program / Results. */
   async idsByRound(panel: Locator): Promise<string[][]> {
-    return panel.locator('[data-round]').evaluateAll((groups) =>
-      groups.map((g) => [...g.querySelectorAll('tbody tr')].map((tr) => tr.getAttribute('data-horse-id') ?? '').sort()),
-    )
+    return panel
+      .locator('[data-round]')
+      .evaluateAll((groups) =>
+        groups.map((g) => [...g.querySelectorAll('tbody tr')].map((tr) => tr.getAttribute('data-horse-id') ?? '').sort()),
+      )
   }
 }
 

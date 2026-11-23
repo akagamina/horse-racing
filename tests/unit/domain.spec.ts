@@ -22,7 +22,13 @@ const scripted = (values: number[]): Rng => {
 }
 
 const runner = (horseId: string, lane: number, finishTime: number): Runner => ({
-  horseId, lane, finishTime, baseSpeed: 16, surgeAmplitude: 0.05, surgeFrequency: 0.1, surgePhase: 0,
+  horseId,
+  lane,
+  finishTime,
+  baseSpeed: 16,
+  surgeAmplitude: 0.05,
+  surgeFrequency: 0.1,
+  surgePhase: 0,
 })
 
 describe('horses', () => {
@@ -82,7 +88,10 @@ describe('program', () => {
 
   it('accepts other distances and field sizes without code changes', () => {
     const custom = generateProgram(createRng(1), horses, [1000, 3000], 8)
-    expect(custom.map((r) => [r.distance, r.entries.length])).toEqual([[1000, 8], [3000, 8]])
+    expect(custom.map((r) => [r.distance, r.entries.length])).toEqual([
+      [1000, 8],
+      [3000, 8],
+    ])
   })
 
   it('is repeatable for the same seed', () => {
@@ -127,7 +136,11 @@ describe('simulation', () => {
 
   it('breaks an exact tie by the lower lane, stably', () => {
     const placings = rankRunners([runner('b', 7, 71), runner('a', 3, 71), runner('c', 5, 69)])
-    expect(placings.map((p) => [p.place, p.horseId])).toEqual([[1, 'c'], [2, 'a'], [3, 'b']])
+    expect(placings.map((p) => [p.place, p.horseId])).toEqual([
+      [1, 'c'],
+      [2, 'a'],
+      [3, 'b'],
+    ])
   })
 
   it('does not mutate the runners or the round when building a result', () => {

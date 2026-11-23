@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FINISH_Z, gallopPhase, horseZ, LANE_WIDTH, laneX, NOSE_OFFSET, noseZ, START_Z } from '@/three/trackLayout'
+import { FINISH_Z, frontRunner, gallopPhase, horseZ, LANE_WIDTH, laneX, NOSE_OFFSET, noseZ, START_Z } from '@/three/trackLayout'
 
 describe('track layout', () => {
   it('maps start, middle and finish to the right Z, nose on the line', () => {
@@ -26,5 +26,25 @@ describe('track layout', () => {
     const p = gallopPhase(1234.5, 0.9)
     expect(p).toBeGreaterThanOrEqual(0)
     expect(p).toBeLessThan(1)
+  })
+
+  const field = (...metres: number[]) => new Map(metres.map((m, i) => [`h${i + 1}`, m]))
+
+  it('puts the leader line on the horse in front, and only that horse', () => {
+    expect(frontRunner(field(300, 450, 120), 1200)).toEqual({ id: 'h2', progress: 450 / 1200 })
+  })
+
+  it('keeps the line on the lower lane when two horses are level', () => {
+    expect(frontRunner(field(400, 400), 1200)?.id).toBe('h1')
+  })
+
+  it('hides the leader line before the start', () => {
+    expect(frontRunner(field(0, 0, 0), 1200)).toBeNull()
+    expect(frontRunner(field(), 1200)).toBeNull()
+    expect(frontRunner(field(100), 0)).toBeNull()
+  })
+
+  it('hides the leader line once the first horse has crossed, and never moves it to another horse', () => {
+    expect(frontRunner(field(1200, 1100, 900), 1200)).toBeNull()
   })
 })

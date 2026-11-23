@@ -21,8 +21,8 @@ const kindTitle = computed(() => SHOWROOM_GROUPS.find((g) => g.kind === props.ki
   </ShowroomFrame>
   <ShowroomFrame v-else title="No such showroom page" kind-title="Unknown">
     <p data-testid="showroom-missing">
-      There is no showroom page at <code>{{ kind }}/{{ slug }}</code>. Pick one from the
-      <RouterLink to="/showroom">showroom index</RouterLink>.
+      There is no showroom page at <code>{{ kind }}/{{ slug }}</code
+      >. Pick one from the <RouterLink to="/showroom">showroom index</RouterLink>.
     </p>
   </ShowroomFrame>
 </template>

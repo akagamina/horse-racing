@@ -138,4 +138,75 @@ describe('race store', () => {
     expect(store.roundIndex).toBe(0)
     expect(store.horses).toBe(horses)
   })
+
+  describe('speed', () => {
+    /** Real seconds until round 1 is published, and the full finishing order of the program. */
+    const play = (speed: 1 | 2 | 4) => {
+      const s = newStore(7)
+      s.setSpeed(speed)
+      s.generate()
+      s.start()
+      let frames = 0
+      runUntil(s, () => {
+        if (s.results.length === 0) frames++
+        return s.status === 'completed'
+      })
+      return { firstRound: frames * FRAME, order: s.results.map((r) => r.placings.map((p) => p.horseId)) }
+    }
+
+    it('gives the same results at 1×, 2× and 4×', () => {
+      const normal = play(1).order
+      expect(play(2).order).toEqual(normal)
+      expect(play(4).order).toEqual(normal)
+    })
+
+    it('plays a round about four times faster at 4×', () => {
+      expect(play(4).firstRound / play(1).firstRound).toBeCloseTo(0.25, 1)
+    })
+
+    it('can change mid-round without changing the result or moving the horses', () => {
+      store.generate()
+      store.start()
+      store.advance(2)
+      const before = new Map(store.positions)
+      store.setSpeed(4)
+      expect(new Map(store.positions)).toEqual(before)
+      const expected = store.runners.map((r) => r.horseId)
+      runUntil(store, () => store.results.length > 0)
+      expect(store.results[0]!.placings.map((p) => p.horseId).sort()).toEqual([...expected].sort())
+    })
+
+    it('keeps the pause between rounds at 1.5 real seconds at any speed', () => {
+      store.setSpeed(4)
+      store.generate()
+      store.start()
+      runUntil(store, () => store.results.length > 0)
+      store.advance(INTERMISSION_SECONDS - 0.1)
+      expect(store.roundIndex).toBe(0)
+      store.advance(0.2)
+      expect(store.roundIndex).toBe(1)
+    })
+
+    it('does nothing while paused and survives a new program', () => {
+      store.generate()
+      store.start()
+      store.advance(1)
+      store.pause()
+      const clock = store.clock
+      store.setSpeed(2)
+      store.advance(5)
+      expect(store.clock).toBe(clock)
+      store.resume()
+      store.advance(0.1)
+      expect(store.clock).toBeCloseTo(clock + 0.1 * 20)
+      store.pause()
+      store.generate()
+      expect(store.speed).toBe(2)
+    })
+
+    it('ignores values outside 1, 2 and 4', () => {
+      store.setSpeed(3 as 1)
+      expect(store.speed).toBe(1)
+    })
+  })
 })

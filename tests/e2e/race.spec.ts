@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { RacePage, trackReady } from '../support/race-page'
 
 test.describe('race flow', () => {
@@ -85,8 +85,7 @@ test.describe('race flow', () => {
 
 test.describe('3D track', () => {
   /** The pixels WebGL actually drew, read straight from the canvas. */
-  const canvasShot = (page: import('@playwright/test').Page) =>
-    page.getByTestId('track-canvas').evaluate((c) => (c as HTMLCanvasElement).toDataURL('image/png'))
+  const canvasShot = (page: Page) => page.getByTestId('track-canvas').evaluate((c) => (c as HTMLCanvasElement).toDataURL('image/png'))
 
   test('draws a real WebGL scene, changes while running and stays still while paused', async ({ page }) => {
     await page.clock.install()

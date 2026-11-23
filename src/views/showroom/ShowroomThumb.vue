@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { horsePortrait } from '@/three/horseStage'
 import { FIXTURE_HORSES, type ShowroomEntry } from '@/showroom/manifest'
 import { createFixtureStore, type FixtureSlug } from '@/showroom/fixtures'
+import { enqueueThumb } from './thumbQueue'
 
 /**
  * Small static preview for the index. State thumbnails are drawn from the
@@ -13,15 +14,22 @@ const props = defineProps<{ entry: ShowroomEntry }>()
 
 const horse = computed(() => {
   if (props.entry.kind === 'horses') return FIXTURE_HORSES.find((h) => h.id === props.entry.slug)
-  if (props.entry.kind === 'visuals' && props.entry.slug !== 'html-track') return FIXTURE_HORSES[props.entry.slug === 'galloping-horse' ? 2 : 0]
+  if (props.entry.kind === 'visuals' && props.entry.slug !== 'html-track')
+    return FIXTURE_HORSES[props.entry.slug === 'galloping-horse' ? 2 : 0]
   return undefined
 })
-const image = computed(() => (horse.value ? horsePortrait(horse.value, 240, 150) : null))
-
-const lanes = computed(() => {
+function buildLanes() {
   const { kind, slug } = props.entry
   const fixture: FixtureSlug | null =
-    kind === 'states' ? (slug as FixtureSlug) : kind === 'screens' ? 'race-board' : kind === 'components' && slug === 'race-track' ? 'race-board' : slug === 'html-track' ? 'running' : null
+    kind === 'states'
+      ? (slug as FixtureSlug)
+      : kind === 'screens'
+        ? 'race-board'
+        : kind === 'components' && slug === 'race-track'
+          ? 'race-board'
+          : slug === 'html-track'
+            ? 'running'
+            : null
   if (!fixture) return null
   const store = createFixtureStore(fixture)
   const round = store.currentRound
@@ -34,18 +42,45 @@ const lanes = computed(() => {
       color: store.horsesById.get(entry.horseId)?.color.hex ?? '#fff',
     })),
   }
+}
+
+// Drawn after the page has painted, one thumbnail per task (see thumbQueue).
+const ready = ref(false)
+const image = shallowRef<string | null>(null)
+const lanes = shallowRef<ReturnType<typeof buildLanes>>(null)
+let disposed = false
+onMounted(() =>
+  enqueueThumb(() => {
+    if (disposed) return
+    image.value = horse.value ? horsePortrait(horse.value, 240, 150) : null
+    lanes.value = buildLanes()
+    ready.value = true
+  }),
+)
+onBeforeUnmount(() => {
+  disposed = true
 })
 </script>
 
 <template>
-  <div class="thumb" aria-hidden="true">
-    <img v-if="image" :src="image" alt="" width="240" height="150" />
+  <div class="thumb" aria-hidden="true" :data-ready="ready">
+    <div v-if="!ready" class="thumb__pending" />
+    <img v-else-if="image" :src="image" alt="" width="240" height="150" />
     <svg v-else-if="lanes" viewBox="0 0 240 150">
       <rect width="240" height="150" fill="#2f6b3e" />
       <rect x="20" y="10" width="200" height="130" fill="#a97b4f" />
       <rect x="20" y="16" width="200" height="3" fill="#fbfaf6" />
       <rect x="20" y="128" width="200" height="2" fill="#fbfaf6" />
-      <circle v-for="dot in lanes.dots" :key="dot.lane" :cx="20 + dot.lane * 18.2 - 9" :cy="124 - dot.p * 104" r="6" :fill="dot.color" stroke="#16222e" stroke-width="1" />
+      <circle
+        v-for="dot in lanes.dots"
+        :key="dot.lane"
+        :cx="20 + dot.lane * 18.2 - 9"
+        :cy="124 - dot.p * 104"
+        r="6"
+        :fill="dot.color"
+        stroke="#16222e"
+        stroke-width="1"
+      />
       <g v-for="n in lanes.results" :key="n">
         <rect :x="226" :y="12 + (n - 1) * 21" width="10" height="17" rx="2" fill="#f2b233" />
       </g>
@@ -68,6 +103,21 @@ const lanes = computed(() => {
 </template>
 
 <style scoped>
-.thumb { aspect-ratio: 240 / 150; border-radius: 6px; overflow: hidden; background: #dce7e4; }
-.thumb img, .thumb svg { width: 100%; height: 100%; display: block; object-fit: cover; }
+.thumb {
+  aspect-ratio: 240 / 150;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #dce7e4;
+}
+.thumb__pending {
+  width: 100%;
+  height: 100%;
+}
+.thumb img,
+.thumb svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
 </style>

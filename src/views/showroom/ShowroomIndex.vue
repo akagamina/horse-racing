@@ -25,12 +25,38 @@ import ShowroomThumb from './ShowroomThumb.vue'
 </template>
 
 <style scoped>
-.group { margin-bottom: 2rem; }
-.group h2 { font-size: var(--step-2); }
-.group__blurb { margin: 0.2rem 0 0.8rem; color: var(--muted); }
-.grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
-.grid--dense { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
-.card { display: block; text-decoration: none; color: var(--ink); }
-.card:hover .card__title { text-decoration: underline; }
-.card__title { display: block; margin-top: 0.35rem; font-weight: 600; }
+.group {
+  margin-bottom: 2rem;
+}
+.group h2 {
+  font-size: var(--step-2);
+}
+.group__blurb {
+  margin: 0.2rem 0 0.8rem;
+  color: var(--muted);
+}
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+.grid--dense {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.card {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover .card__title {
+  text-decoration: underline;
+}
+.card__title {
+  display: block;
+  margin-top: 0.35rem;
+  font-weight: 600;
+}
 </style>

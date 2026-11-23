@@ -21,11 +21,35 @@ defineProps<{ title: string; hint?: string; kindTitle?: string }>()
 </template>
 
 <style scoped>
-.frame { min-height: 100vh; min-height: 100dvh; }
-.frame__bar { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--line); background: var(--paper); }
-.frame__nav { display: flex; gap: 0.5rem; align-items: baseline; font-size: var(--step--1); color: var(--muted); }
-.frame__play { margin-left: auto; }
-.frame__title { font-size: var(--step-3); margin-top: 0.4rem; }
-.frame__hint { margin: 0.35rem 0 0; color: var(--muted); max-width: 70ch; }
-.frame__body { padding: 1rem 1.25rem 2rem; }
+.frame {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+.frame__bar {
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+.frame__nav {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+.frame__play {
+  margin-left: auto;
+}
+.frame__title {
+  font-size: var(--step-3);
+  margin-top: 0.4rem;
+}
+.frame__hint {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  max-width: 70ch;
+}
+.frame__body {
+  padding: 1rem 1.25rem 2rem;
+}
 </style>

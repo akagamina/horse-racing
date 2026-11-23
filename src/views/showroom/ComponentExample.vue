@@ -34,7 +34,13 @@ const controlStates = STATE_SLUGS.map((slug) => ({ slug, store: createFixtureSto
       :standings="store.standings"
     />
 
-    <RoundProgram v-else-if="slug === 'round-program'" class="fixed-panel" :program="store.program" :horses-by-id="store.horsesById" :active-round="2" />
+    <RoundProgram
+      v-else-if="slug === 'round-program'"
+      class="fixed-panel"
+      :program="store.program"
+      :horses-by-id="store.horsesById"
+      :active-round="2"
+    />
 
     <div v-else-if="slug === 'round-results'" class="results-pair">
       <RoundResults :results="[]" :horses-by-id="store.horsesById" />
@@ -44,10 +50,35 @@ const controlStates = STATE_SLUGS.map((slug) => ({ slug, store: createFixtureSto
 </template>
 
 <style scoped>
-.controls-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
-.specimen { margin: 0; padding: 1rem; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-m); }
-.specimen figcaption { margin-top: 0.6rem; color: var(--muted); font-size: var(--step--1); }
-.fixed-panel { max-width: 34rem; max-height: 44rem; }
-.fixed-track { max-width: 34rem; height: 640px; }
-.results-pair { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(280px, 34rem)); align-items: start; }
+.controls-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+.specimen {
+  margin: 0;
+  padding: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+}
+.specimen figcaption {
+  margin-top: 0.6rem;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+.fixed-panel {
+  max-width: 34rem;
+  max-height: 44rem;
+}
+.fixed-track {
+  max-width: 34rem;
+  height: 640px;
+}
+.results-pair {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 34rem));
+  align-items: start;
+}
 </style>

@@ -21,8 +21,7 @@ export function createRunners(rng: Rng, round: Round, horses: ReadonlyMap<string
   return round.entries.map((entry) => {
     const horse = horses.get(entry.horseId)
     if (!horse) throw new Error(`Unknown horse ${entry.horseId}`)
-    const baseSpeed =
-      MIN_SPEED + (CONDITION_BONUS * horse.condition) / CONDITION_MAX + randomBetween(rng, -FORM_SPREAD, FORM_SPREAD)
+    const baseSpeed = MIN_SPEED + (CONDITION_BONUS * horse.condition) / CONDITION_MAX + randomBetween(rng, -FORM_SPREAD, FORM_SPREAD)
     const surgeAmplitude = randomBetween(rng, 0.04, 0.12)
     const surgeFrequency = randomBetween(rng, 0.08, 0.2)
     const surgePhase = randomBetween(rng, 0, Math.PI * 2)

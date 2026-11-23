@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { RaceStatus } from '@/stores/race'
+import { SPEEDS, type RaceStatus, type Speed } from '@/stores/race'
 
-const props = defineProps<{ status: RaceStatus; canGenerate: boolean }>()
-const emit = defineEmits<{ generate: []; toggle: [] }>()
+const props = withDefaults(defineProps<{ status: RaceStatus; canGenerate: boolean; speed?: Speed }>(), { speed: 1 })
+const emit = defineEmits<{ generate: []; toggle: []; speed: [Speed] }>()
 
 const toggleLabel = computed(() => {
   if (props.status === 'running') return 'Pause'
@@ -51,13 +51,69 @@ const hint = computed(() => {
         {{ toggleLabel }}
       </button>
     </div>
+    <div class="speed" role="group" aria-label="Race speed" data-testid="speed">
+      <button
+        v-for="option in SPEEDS"
+        :key="option"
+        type="button"
+        class="speed__option"
+        :class="{ 'is-active': option === speed }"
+        :aria-pressed="option === speed"
+        :data-speed="option"
+        @click="emit('speed', option)"
+      >
+        {{ option }}×
+      </button>
+    </div>
     <p v-if="hint" class="controls__hint" data-testid="controls-hint">{{ hint }}</p>
   </div>
 </template>
 
 <style scoped>
-.controls { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
-.controls__buttons { display: flex; gap: 0.5rem; }
-.controls__buttons .btn:last-child { min-width: 6.5rem; }
-.controls__hint { margin: 0; color: var(--muted); font-size: var(--step--1); max-width: 34ch; }
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+.controls__buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+.controls__buttons .btn:last-child {
+  min-width: 6.5rem;
+}
+.speed {
+  display: inline-flex;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-s);
+  overflow: hidden;
+}
+.speed__option {
+  appearance: none;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font: 600 var(--step-0) / 1 var(--font-display);
+  min-width: 2.6rem;
+  min-height: 40px;
+  cursor: pointer;
+}
+.speed__option:first-child {
+  border-left: 0;
+}
+.speed__option:hover:not(.is-active) {
+  background: var(--panel-sunk);
+}
+.speed__option.is-active {
+  background: var(--ink);
+  color: #fff;
+}
+.controls__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+  max-width: 34ch;
+}
 </style>

@@ -43,10 +43,13 @@ onMounted(async () => {
   }
 })
 
-watch(() => props.horse, (horse) => {
-  stage?.setHorse(horse)
-  draw()
-})
+watch(
+  () => props.horse,
+  (horse) => {
+    stage?.setHorse(horse)
+    draw()
+  },
+)
 watch(() => props.phase, draw)
 
 onBeforeUnmount(() => {
@@ -65,7 +68,24 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.horse-canvas { position: relative; width: 100%; height: 100%; min-height: 200px; background: #dce7e4; border-radius: var(--radius-m); overflow: hidden; }
-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.horse-canvas__fallback { padding: 1rem; color: var(--muted); }
+.horse-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  background: #dce7e4;
+  border-radius: var(--radius-m);
+  overflow: hidden;
+}
+canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.horse-canvas__fallback {
+  padding: 1rem;
+  color: var(--muted);
+}
 </style>

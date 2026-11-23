@@ -23,11 +23,30 @@ const live = ref(props.slug !== 'running')
 </template>
 
 <style scoped>
-.preview-bar { display: flex; gap: 0.8rem; align-items: center; margin: 0 0 0.8rem; color: var(--muted); font-size: var(--step--1); flex-wrap: wrap; }
-.board-frame { border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden; background: var(--paper); }
-.board-frame :deep(.board) { min-height: 0; }
-.board-frame :deep(.board__bar) { position: static; }
+.preview-bar {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  margin: 0 0 0.8rem;
+  color: var(--muted);
+  font-size: var(--step--1);
+  flex-wrap: wrap;
+}
+.board-frame {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  background: var(--paper);
+}
+.board-frame :deep(.board) {
+  min-height: 0;
+}
+.board-frame :deep(.board__bar) {
+  position: static;
+}
 @media (min-width: 1180px) {
-  .board-frame :deep(.board) { height: 820px; }
+  .board-frame :deep(.board) {
+    height: 820px;
+  }
 }
 </style>

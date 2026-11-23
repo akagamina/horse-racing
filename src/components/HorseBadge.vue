@@ -22,6 +22,13 @@ const style = computed(() => ({ background: props.horse.color.hex, color: readab
   border-radius: 50%;
   box-shadow: inset 0 0 0 1.5px rgb(0 0 0 / 0.22);
 }
-.badge--sm { width: 1.45rem; height: 1.45rem; }
-.badge--md { width: 2rem; height: 2rem; font-size: 1.05rem; }
+.badge--sm {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+.badge--md {
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.05rem;
+}
 </style>

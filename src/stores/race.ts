@@ -21,6 +21,10 @@ import {
 
 export type RaceStatus = 'idle' | 'ready' | 'running' | 'paused' | 'completed'
 
+/** Playback speeds the user can pick. 1 is the normal pace. */
+export const SPEEDS = [1, 2, 4] as const
+export type Speed = (typeof SPEEDS)[number]
+
 /** Real seconds the finished field stays on screen before the next round starts. */
 export const INTERMISSION_SECONDS = 1.5
 
@@ -41,8 +45,10 @@ export const useRaceStore = defineStore('race', () => {
   const roundFinished = ref(false)
   const results = shallowRef<readonly RoundResult[]>([])
   const status = ref<RaceStatus>('idle')
-  /** Simulated seconds per real second. One place to change for a 2× button. */
-  const timeScale = ref(TIME_SCALE)
+  /** Playback speed chosen by the user. It survives a new program. */
+  const speed = ref<Speed>(1)
+  /** Simulated seconds per real second. */
+  const timeScale = computed(() => TIME_SCALE * speed.value)
 
   const horsesById = computed(() => indexHorses(horses.value))
   const currentRound = computed(() => program.value?.[roundIndex.value] ?? null)
@@ -61,9 +67,7 @@ export const useRaceStore = defineStore('race', () => {
     return map
   })
 
-  const standings = computed(() =>
-    currentRound.value ? liveOrder(runners.value, clock.value, currentRound.value.distance) : [],
-  )
+  const standings = computed(() => (currentRound.value ? liveOrder(runners.value, clock.value, currentRound.value.distance) : []))
 
   function startSession(nextSeed: number = randomSeed()): void {
     seed.value = nextSeed
@@ -115,6 +119,15 @@ export const useRaceStore = defineStore('race', () => {
     else if (status.value === 'paused') resume()
   }
 
+  /**
+   * Changes how fast the clock runs, at any moment. Results do not change:
+   * finish times are fixed when a round starts, speed only changes how fast
+   * we play them back.
+   */
+  function setSpeed(next: Speed): void {
+    if (SPEEDS.includes(next)) speed.value = next
+  }
+
   /** Moves the race clock by `realSeconds`. Does nothing unless running. */
   function advance(realSeconds: number): void {
     if (status.value !== 'running' || realSeconds <= 0) return
@@ -129,6 +142,7 @@ export const useRaceStore = defineStore('race', () => {
       results.value = [...results.value, buildResult(round, runners.value)]
     }
 
+    // The pause between rounds is real time: the same 1.5 s at any speed.
     if (roundFinished.value && clock.value >= duration.value + INTERMISSION_SECONDS * timeScale.value) {
       const next = roundIndex.value + 1
       if (next < (program.value?.length ?? 0)) {
@@ -150,6 +164,7 @@ export const useRaceStore = defineStore('race', () => {
     roundFinished,
     results,
     status,
+    speed,
     timeScale,
     horsesById,
     currentRound,
@@ -166,6 +181,7 @@ export const useRaceStore = defineStore('race', () => {
     resume,
     toggle,
     advance,
+    setSpeed,
   }
 })
 

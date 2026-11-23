@@ -31,6 +31,26 @@ export function horseZ(progress: number): number {
   return noseZ(progress) + NOSE_OFFSET
 }
 
+/**
+ * The leader and its progress (0–1), or null when there is no lead to show:
+ * before the start, and from the moment the first horse crosses the finish.
+ * The leader line is drawn in this horse's lane only. Level horses: the first
+ * in the map (the lower lane) keeps the line.
+ */
+export function frontRunner(positions: ReadonlyMap<string, number>, distance: number): { id: string; progress: number } | null {
+  if (distance <= 0) return null
+  let id: string | null = null
+  let front = 0
+  for (const [horseId, covered] of positions) {
+    if (covered >= distance) return null
+    if (covered > front) {
+      front = covered
+      id = horseId
+    }
+  }
+  return id === null ? null : { id, progress: front / distance }
+}
+
 /** Gallop phase in [0, 1), derived from distance only, never from wall time. */
 export function gallopPhase(metres: number, offset: number): number {
   const phase = metres / STRIDE_METRES + offset

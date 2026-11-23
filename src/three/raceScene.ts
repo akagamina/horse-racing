@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import type { Horse } from '@/domain'
 import { createHorseRig, poseGallop, poseStand, type HorseRig } from './horseModel'
 import { addRaceLights, createRenderer } from './lighting'
-import { FINISH_Z, gallopPhase, horseZ, LANE_COUNT, LANE_WIDTH, laneX, noseZ, START_Z, TRACK_WIDTH } from './trackLayout'
+import { FINISH_Z, frontRunner, gallopPhase, horseZ, LANE_COUNT, LANE_WIDTH, laneX, noseZ, START_Z, TRACK_WIDTH } from './trackLayout'
 
 export interface FieldEntry {
   readonly horse: Horse
@@ -36,6 +36,9 @@ export const CAMERA_PITCH = 0.7
 const SKY = '#BFD9E2'
 const TURF = '#3F7A45'
 const DIRT = '#A97B4F'
+/** Leader line: a cold colour that stands out from the dirt, the turf and the chalk. */
+const LEADER_LINE = '#19D3FF'
+const LEADER_WALL_HEIGHT = 1.9
 
 /**
  * One canvas, one fixed perspective camera behind the start: the field runs
@@ -48,6 +51,7 @@ export class RaceScene {
   private readonly camera = new THREE.PerspectiveCamera(34, 1, 0.5, 400)
   private readonly rigs = new Map<string, HorseRig>()
   private readonly poles = new THREE.Group()
+  private readonly leaderLine = new THREE.Group()
   private readonly disposables: { dispose(): void }[] = []
   private field: readonly FieldEntry[] = []
   private poleDistance = 0
@@ -61,6 +65,7 @@ export class RaceScene {
     addRaceLights(this.scene)
     this.buildTrack()
     this.scene.add(this.poles)
+    this.buildLeaderLine()
   }
 
   /** Replaces the runners. Rigs of horses that stay in the field are reused. */
@@ -96,6 +101,10 @@ export class RaceScene {
       if (!frame.started || progress >= 1) poseStand(rig)
       else poseGallop(rig, gallopPhase(metres, rig.phaseOffset), { amplitude })
     }
+    const front = frame.started ? frontRunner(frame.positions, frame.distance) : null
+    const lane = front && this.field.find((entry) => entry.horse.id === front.id)?.lane
+    this.leaderLine.visible = !!front && !!lane
+    if (front && lane) this.leaderLine.position.set(laneX(lane), 0, noseZ(front.progress))
     this.renderer.render(this.scene, this.camera)
   }
 
@@ -209,6 +218,31 @@ export class RaceScene {
     this.buildRails(near, far)
     this.buildGate()
     this.buildFinishPosts()
+  }
+
+  /**
+   * The offside-line idea from football: a short line in the leader's lane,
+   * at its nose, and nowhere else. The low see-through wall above it matters
+   * as much as the line: the camera looks down at an angle, so a nose carried
+   * 1.5 m above the dirt would look ahead of a line drawn only on the ground.
+   * It disappears when the first horse finishes.
+   */
+  private buildLeaderLine(): void {
+    const width = LANE_WIDTH
+    const solid = this.track(new THREE.MeshBasicMaterial({ color: LEADER_LINE }))
+    const glass = this.track(
+      new THREE.MeshBasicMaterial({ color: LEADER_LINE, transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide }),
+    )
+    const ground = new THREE.Mesh(this.track(new THREE.PlaneGeometry(width, 0.3)), solid)
+    ground.rotation.x = -Math.PI / 2
+    ground.position.y = 0.02
+    const wall = new THREE.Mesh(this.track(new THREE.PlaneGeometry(width, LEADER_WALL_HEIGHT)), glass)
+    wall.position.y = LEADER_WALL_HEIGHT / 2
+    const top = new THREE.Mesh(this.track(new THREE.PlaneGeometry(width, 0.1)), solid)
+    top.position.y = LEADER_WALL_HEIGHT
+    this.leaderLine.add(ground, wall, top)
+    this.leaderLine.visible = false
+    this.scene.add(this.leaderLine)
   }
 
   private buildRails(near: number, far: number): void {

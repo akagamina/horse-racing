@@ -28,8 +28,17 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', pauseWhen
 </template>
 
 <style scoped>
-.game-footer { padding: 0 1rem 1.25rem; font-size: var(--step--1); }
+.game-footer {
+  padding: 0 1rem 1.25rem;
+  font-size: var(--step--1);
+}
 @media (min-width: 1180px) {
-  .game-footer { position: fixed; right: 1rem; bottom: 0.4rem; padding: 0; z-index: 5; }
+  .game-footer {
+    position: fixed;
+    right: 1rem;
+    bottom: 0.4rem;
+    padding: 0;
+    z-index: 5;
+  }
 }
 </style>

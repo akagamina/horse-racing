@@ -85,8 +85,10 @@ function material(assets: SharedAssets, key: string, make: () => THREE.Material)
 }
 
 function solid(assets: SharedAssets, hex: string, roughness = 0.8): THREE.Material {
-  return material(assets, `solid:${hex}:${roughness}`, () =>
-    new THREE.MeshStandardMaterial({ color: hex, roughness, metalness: 0, flatShading: true }),
+  return material(
+    assets,
+    `solid:${hex}:${roughness}`,
+    () => new THREE.MeshStandardMaterial({ color: hex, roughness, metalness: 0, flatShading: true }),
   )
 }
 
@@ -145,11 +147,15 @@ export function createHorseRig(horse: Horse): HorseRig {
   const white = solid(assets, '#F1EFEA', 0.9)
   const skin = solid(assets, '#C98E6B', 0.9)
   const hoofMat = solid(assets, '#1C1917', 0.9)
-  const bibMat = material(assets, `bib:${horse.number}`, () =>
-    new THREE.MeshBasicMaterial({ map: numberTexture(assets, horse), transparent: true, side: THREE.DoubleSide }),
+  const bibMat = material(
+    assets,
+    `bib:${horse.number}`,
+    () => new THREE.MeshBasicMaterial({ map: numberTexture(assets, horse), transparent: true, side: THREE.DoubleSide }),
   )
-  const shadowMat = material(assets, 'shadow', () =>
-    new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.28, depthWrite: false }),
+  const shadowMat = material(
+    assets,
+    'shadow',
+    () => new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.28, depthWrite: false }),
   )
 
   const mesh = (geometry: THREE.BufferGeometry, mat: THREE.Material) => new THREE.Mesh(geometry, mat)
@@ -257,7 +263,7 @@ export function createHorseRig(horse: Horse): HorseRig {
     tail,
     jockey,
     legs,
-    phaseOffset: ((horse.number * 0.618) % 1 + 1) % 1,
+    phaseOffset: (((horse.number * 0.618) % 1) + 1) % 1,
     dispose() {
       if (disposed) return
       disposed = true

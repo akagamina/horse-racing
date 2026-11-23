@@ -14,7 +14,15 @@ async function settle(page: Page) {
 const desktop = { width: 1440, height: 900 }
 const mobile = { width: 390, height: 844 }
 
-const boardPages = ['screens/race-board', 'states/idle', 'states/ready', 'states/running', 'states/paused', 'states/after-round-1', 'states/completed']
+const boardPages = [
+  'screens/race-board',
+  'states/idle',
+  'states/ready',
+  'states/running',
+  'states/paused',
+  'states/after-round-1',
+  'states/completed',
+]
 
 test.describe('desktop 1440 × 900', () => {
   test.use({ viewport: desktop })

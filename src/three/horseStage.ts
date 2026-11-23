@@ -18,7 +18,10 @@ export class HorseStage {
   private readonly disposables: { dispose(): void }[] = []
   private rig: HorseRig | null = null
 
-  constructor(canvas: HTMLCanvasElement, private readonly view: StageView = 'side') {
+  constructor(
+    canvas: HTMLCanvasElement,
+    private readonly view: StageView = 'side',
+  ) {
     this.renderer = createRenderer(canvas)
     this.scene.background = new THREE.Color(BACKDROP)
     addRaceLights(this.scene)

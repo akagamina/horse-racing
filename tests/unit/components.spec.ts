@@ -4,6 +4,8 @@ import HorseRoster from '@/components/HorseRoster.vue'
 import RaceControls from '@/components/RaceControls.vue'
 import RoundProgram from '@/components/RoundProgram.vue'
 import RoundResults from '@/components/RoundResults.vue'
+import RoundStepper from '@/components/RoundStepper.vue'
+import { ROUND_DISTANCES } from '@/domain'
 import { createFixtureStore } from '@/showroom/fixtures'
 import type { RaceStatus } from '@/stores/race'
 
@@ -22,6 +24,15 @@ describe('RaceControls', () => {
     expect(button(w, 'generate').attributes('disabled')).toBe(canGenerate ? undefined : '')
     expect(button(w, 'toggle').text()).toBe(label)
     expect(button(w, 'toggle').attributes('disabled')).toBe(toggleEnabled ? undefined : '')
+  })
+
+  it('marks the chosen speed and emits a new one', async () => {
+    const w = mount(RaceControls, { props: { status: 'running', canGenerate: false, speed: 2 } })
+    const options = w.findAll('[data-testid="speed"] button')
+    expect(options.map((o) => o.text())).toEqual(['1×', '2×', '4×'])
+    expect(options.map((o) => o.attributes('aria-pressed'))).toEqual(['false', 'true', 'false'])
+    await options[2]!.trigger('click')
+    expect(w.emitted('speed')).toEqual([[4]])
   })
 
   it('emits the user actions', async () => {
@@ -63,5 +74,39 @@ describe('panels', () => {
       expect(row.text()).toContain(store.horsesById.get(entry.horseId)!.name)
     })
     expect(w.get('[data-round="2"]').text()).toContain('On track')
+  })
+})
+
+describe('RoundStepper', () => {
+  const states = (completed: number, active: number | null) =>
+    mount(RoundStepper, { props: { distances: ROUND_DISTANCES, completed, active } })
+      .findAll('li')
+      .map((li) => li.attributes('data-state'))
+
+  it('shows six pending rounds before the race', () => {
+    expect(states(0, null)).toEqual(['pending', 'pending', 'pending', 'pending', 'pending', 'pending'])
+  })
+
+  it('marks finished rounds, the round on track and the ones to come', () => {
+    expect(states(2, 3)).toEqual(['done', 'done', 'active', 'pending', 'pending', 'pending'])
+  })
+
+  it('keeps a round finished while it still stands on the track', () => {
+    expect(states(1, 1)[0]).toBe('done')
+  })
+
+  it('names each distance and exposes the current step', () => {
+    const w = mount(RoundStepper, { props: { distances: ROUND_DISTANCES, completed: 0, active: 1 } })
+    expect(w.findAll('li').map((li) => li.find('.step__distance').text())).toEqual(ROUND_DISTANCES.map((d) => `${d} m`))
+    expect(w.find('[aria-current="step"]').attributes('data-state')).toBe('active')
+  })
+})
+
+describe('HorseRoster leader', () => {
+  it('marks only the leading horse', () => {
+    const store = createFixtureStore('running')
+    const leaderId = store.standings[0]!
+    const w = mount(HorseRoster, { props: { horses: store.horses, leaderId } })
+    expect(w.findAll('tr.is-leader').map((tr) => tr.attributes('data-horse-id'))).toEqual([leaderId])
   })
 })
