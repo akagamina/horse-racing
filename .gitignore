@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dist-single/
+test-results/
+playwright-report/
+*.tmp.mjs
+.DS_Store
+# Private inputs: never published
+*.pdf
+brief*.md
+INTERVIEW*.md

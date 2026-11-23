@@ -1,0 +1,145 @@
+:root {
+  color-scheme: light;
+  --paper: #e9eee9;
+  --panel: #ffffff;
+  --panel-sunk: #f4f6f3;
+  --ink: #16222e;
+  --muted: #56636d;
+  --line: #d3dbd4;
+  --turf: #2f6b3e;
+  --turf-deep: #1f4a2b;
+  --saffron: #f2b233;
+  --post: #c8102e;
+  --focus: #1f4fd1;
+
+  --font-body: 'Barlow', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+
+  --step--1: 0.8125rem;
+  --step-0: 0.9375rem;
+  --step-1: 1.125rem;
+  --step-2: 1.5rem;
+  --step-3: 2.25rem;
+
+  --radius-s: 4px;
+  --radius-m: 10px;
+
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+*, *::before, *::after { box-sizing: inherit; }
+
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+a { color: var(--turf-deep); text-underline-offset: 0.18em; }
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -3rem;
+  z-index: 50;
+  background: var(--ink);
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-s);
+}
+.skip-link:focus { top: calc(env(safe-area-inset-top, 0px) + 0.5rem); }
+
+.btn {
+  appearance: none;
+  border: 2px solid var(--ink);
+  background: var(--panel);
+  color: var(--ink);
+  font: 600 var(--step-1) / 1 var(--font-display);
+  letter-spacing: 0.02em;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  min-height: 44px;
+}
+.btn:hover:not(:disabled) { background: var(--panel-sunk); }
+.btn--primary { background: var(--saffron); }
+.btn--primary:hover:not(:disabled) { background: #e3a21f; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Data tables shared by roster, program and results */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+.data-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 1;
+}
+.data-table td {
+  padding: 0.28rem 0.5rem;
+  border-bottom: 1px solid #edf0ec;
+  vertical-align: middle;
+}
+.data-table .num { text-align: right; width: 3rem; }
+
+.panel {
+  background: var(--panel);
+  border-radius: var(--radius-m);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.panel__head {
+  padding: 0.7rem 0.9rem 0.5rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.panel__head h2 { font-size: var(--step-2); }
+.panel__meta { color: var(--muted); font-size: var(--step--1); }
+.panel__body { overflow: auto; min-height: 0; flex: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
