@@ -115,6 +115,8 @@ test.describe('3D track', () => {
   })
 
   test('switches between the 3D and the classic 2D track without losing the race', async ({ page }) => {
+    // Draws 3D frames on the fake clock: slow on CI's software renderer.
+    test.slow()
     await page.clock.install()
     const race = new RacePage(page)
     await race.open('?seed=6')
