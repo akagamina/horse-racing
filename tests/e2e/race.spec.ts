@@ -3,6 +3,8 @@ import { RacePage, trackReady } from '../support/race-page'
 
 test.describe('race flow', () => {
   test('Generate → Start → move → Pause → Resume → results → six rounds → Generate again', async ({ page }) => {
+    // Plays all six rounds frame by frame on the fake clock: slow on CI's software renderer.
+    test.slow()
     // Fake clock: the test decides how much time passes, never a real sleep.
     await page.clock.install()
     const race = new RacePage(page)
@@ -88,6 +90,8 @@ test.describe('3D track', () => {
   const canvasShot = (page: Page) => page.getByTestId('track-canvas').evaluate((c) => (c as HTMLCanvasElement).toDataURL('image/png'))
 
   test('draws a real WebGL scene, changes while running and stays still while paused', async ({ page }) => {
+    // Every frame is drawn by SwiftShader on the CPU, several times slower on CI than locally.
+    test.slow()
     await page.clock.install()
     const race = new RacePage(page)
     await race.open('?seed=5')
