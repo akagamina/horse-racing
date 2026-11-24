@@ -1,6 +1,6 @@
 # Horse Racing
 
-A six-round horse race you can watch from the grandstand: twenty horses, ten per round, running up a 3D straight from the starting gate to the finish post. Built with Vue 3, Pinia and Three.js for the Insider One front-end case study.
+A six-round horse race for the Insider One front-end case study: twenty horses, ten per round, six distances from 1200 to 2200 m. Watch it on a 3D straight from the grandstand, or switch to a 2D track laid out like the brief's example. Built with Vue 3, Pinia and Three.js.
 
 **[Play the demo](https://akagamina.github.io/horse-racing/)** · **[Open the showroom](https://akagamina.github.io/horse-racing/#/showroom)**
 
@@ -115,12 +115,22 @@ npm run test:visual:update  # deliberately regenerate baselines
 ```
 
 - **Domain tests** check the 20-horse pool, condition bounds, six exact distances, ten distinct horses per round, repeatability by seed, that horses stop at the line, same-frame finishes and tie-breaks, and that ranking never mutates the program.
-- **Store tests** check the state machine, that Pause freezes everything, that nine finishers publish nothing and the tenth publishes one group, 6 × 10 results, and identical results at 30 and 144 fps.
-- **Component tests** check button states and emitted actions, empty and filled Results, and that each lane in Program shows the horse the store placed there.
-- **E2E** drives the full flow with a controlled clock (no sleeps): Generate → Start → movement in at least two lanes → Pause (nothing moves) → Resume → first result → automatic rounds → 60 results matching the program → Generate again. It also checks the WebGL canvas changes while running and stays still while paused, the HTML fallback when WebGL is blocked, every showroom URL directly and after refresh, and mobile layout.
+- **Store tests** check the state machine, that Pause freezes everything, that nine finishers publish nothing and the tenth publishes one group, 6 × 10 results, identical results at 30 and 144 fps, and identical results at 1×, 2× and 4× speed, including a speed change mid-race.
+- **Track tests** check the mapping from metres to the 3D straight, that the leader line marks only the horse in front and disappears at the first finish, and that hoof dust depends on distance only, so a paused race stays frozen.
+- **Component tests** check button states and emitted actions, the speed buttons and round stepper, empty and filled Results, the leader in the horse list, and that each lane in Program shows the horse the store placed there.
+- **E2E** drives the full flow with a controlled clock (no sleeps): Generate → Start → movement in at least two lanes → Pause (nothing moves) → Resume → first result → automatic rounds → 60 results matching the program → Generate again. It also checks the WebGL canvas changes while running and stays still while paused, switching between the 3D and 2D track mid-race, the 2D fallback when WebGL is blocked, every showroom URL directly and after refresh, and mobile layout.
 - **Visual** compares showroom pages at 1440 × 900 and 390 × 844 against committed baselines, using a fixed seed, fixed viewport and software WebGL.
 
 Visual baselines were generated with Playwright 1.63's Chromium on Linux. If the CI container renders a few pixels differently, run the workflow manually with **update_baselines**, download the `visual-baselines` artifact and commit it.
+
+## How I built it
+
+I built this with Claude Code as a pair programmer. I directed the work: the scope, the product decisions recorded in this README, and reviewing each change before it went in. Every change went through the same checks: lint, format, typecheck, unit tests, E2E and visual tests, locally and on CI.
+
+The checks earned their place. Two examples:
+
+- **Does the horse in front really win?** A one-off simulation of 3,000 rounds compared the order drawn on the track, frame by frame, with the published results. They matched every time, including 914 cases where two or more horses crossed within the same frame. The leader line came out of the same question.
+- **A flaky E2E test.** A navigation test failed only when the suite ran in parallel. Measuring it showed the showroom index froze the page for about 4.6 seconds while it drew 23 previews in one go. The fix was in the app, not the test: previews are now drawn one by one after the page appears, and the title shows in about 10 ms.
 
 ## Showroom and assets
 
